@@ -9,7 +9,7 @@ CONDA_SETUP="/Users/alex/miniconda3/etc/profile.d/conda.sh"
 CONDA_ENV="mlxdist"
 
 # Path to your MLX project
-PROJECT_PATH="/Users/alex/Code/ml/mlxdist"
+PROJECT_PATH="/Users/zz/Documents/GitHub/mlx-dist-setup"
 
 # If you haven’t already sourced your conda setup, do so:
 if [ -f "$CONDA_SETUP" ]; then

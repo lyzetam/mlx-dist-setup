@@ -100,6 +100,7 @@ if [ ! -s "$TMP_HOSTFILE" ]; then
     echo "ERROR: Temporary hostfile is empty. Check ${MLX_HOSTS_FILE} and jq installation." >&2
     exit 1
 fi
+
 mpirun --hostfile "$TMP_HOSTFILE" --map-by node python test_mpi.py 2>&1
 MPI_RESULT=$?
 

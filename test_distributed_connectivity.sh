@@ -85,7 +85,11 @@ if rank == 0:
 EOF
 
 echo "Running MPI test across all hosts..."
-mpirun --hostfile "${MLX_HOSTS_FILE}" --map-by node python test_mpi.py 2>&1
+# mpirun expects a plain text hostfile. Convert hosts.json to a temporary
+# hostfile with one hostname per line.
+TMP_HOSTFILE=$(mktemp)
+jq -r '.[].ssh' "${MLX_HOSTS_FILE}" > "$TMP_HOSTFILE"
+mpirun --hostfile "$TMP_HOSTFILE" --map-by node python test_mpi.py 2>&1
 MPI_RESULT=$?
 
 if [ $MPI_RESULT -eq 0 ]; then
@@ -128,7 +132,8 @@ if rank == 0:
 EOF
 
 echo "Running MLX distributed test..."
-mlx.launch --hostfile "${MLX_HOSTS_FILE}" --backend mpi test_mlx_dist.py 2>&1
+# Reuse the temporary hostfile generated above for mlx.launch.
+mlx.launch --hostfile "$TMP_HOSTFILE" --backend mpi test_mlx_dist.py 2>&1
 MLX_RESULT=$?
 
 if [ $MLX_RESULT -eq 0 ]; then
@@ -138,7 +143,7 @@ else
 fi
 
 # Clean up
-rm -f test_mpi.py test_mlx_dist.py
+rm -f test_mpi.py test_mlx_dist.py "$TMP_HOSTFILE"
 
 echo
 echo "==================================================="

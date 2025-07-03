@@ -1,5 +1,5 @@
 [
-  {"ssh": "hostname1"},
-  {"ssh": "hostname2"},
-  {"ssh": "hostname3"}
+  {"ssh": "zz@mbp.local"},
+  {"ssh": "mm@mm1.local"},
+  {"ssh": "mm@mm2.local"}
 ]

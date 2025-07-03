@@ -1,39 +1,45 @@
 #!/usr/bin/env bash
 set -e
 
-# Path to your conda setup script (may vary by system).
-# Adjust if conda is installed in a different location.
-CONDA_SETUP="/Users/alex/miniconda3/etc/profile.d/conda.sh"
-
-# Name of the conda environment
-CONDA_ENV="mlxdist"
-
-# Path to your MLX project
-PROJECT_PATH="/Users/zz/Documents/GitHub/mlx-dist-setup"
-
-# If you haven’t already sourced your conda setup, do so:
-if [ -f "$CONDA_SETUP" ]; then
-  # Use "." instead of "source" for POSIX compatibility
-  . "$CONDA_SETUP"
+# Source the environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "${SCRIPT_DIR}/env_config.sh" ]; then
+    . "${SCRIPT_DIR}/env_config.sh"
 else
-  echo "WARNING: Can't find conda setup script at $CONDA_SETUP"
-  echo "         Make sure conda is properly set up before proceeding."
+    echo "ERROR: env_config.sh not found in ${SCRIPT_DIR}"
+    exit 1
+fi
+
+# Verify paths
+if ! check_paths; then
+    exit 1
+fi
+
+# Source conda setup
+if [ -f "$CONDA_SETUP" ]; then
+    . "$CONDA_SETUP"
+else
+    echo "ERROR: Cannot find conda setup script at $CONDA_SETUP"
+    exit 1
 fi
 
 echo "Activating conda environment: $CONDA_ENV"
 conda activate "$CONDA_ENV"
 
-# Tell Open MPI to use the en0 interface for TCP connections
-export OMPI_MCA_btl_tcp_if_include=en0
+# Tell Open MPI to use the configured network interface for TCP connections
+export OMPI_MCA_btl_tcp_if_include="${MLX_NETWORK_INTERFACE}"
 
 echo "Running distributed MLX job..."
+echo "Using network interface: ${MLX_NETWORK_INTERFACE}"
+echo "Model: ${MLX_MODEL}"
+echo "Hosts file: ${MLX_HOSTS_FILE}"
 
 mlx.launch \
-  --hostfile "$PROJECT_PATH/hosts.json" \
+  --hostfile "${MLX_HOSTS_FILE}" \
   --backend mpi \
-  "$PROJECT_PATH/pipeline_generate.py" \
-  --prompt "What number is larger 6.9 or 6.11?" \
-  --max-tokens 128 \
-  --model mlx-community/DeepSeek-Coder-V2-Lite-Instruct-4bit-mlx
+  "${MLX_PROJECT_PATH}/pipeline_generate.py" \
+  --prompt "${MLX_DEFAULT_PROMPT}" \
+  --max-tokens ${MLX_MAX_TOKENS} \
+  --model ${MLX_MODEL}
 
 echo "MLX run complete!"

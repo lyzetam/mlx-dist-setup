@@ -34,8 +34,12 @@ echo "Using network interface: ${MLX_NETWORK_INTERFACE}"
 echo "Model: ${MLX_MODEL}"
 echo "Hosts file: ${MLX_HOSTS_FILE}"
 
+# Convert hosts.json to a temporary hostfile that OpenMPI understands
+TMP_HOSTFILE=$(mktemp)
+jq -r '.[].ssh' "${MLX_HOSTS_FILE}" > "$TMP_HOSTFILE"
+
 mlx.launch \
-  --hostfile "${MLX_HOSTS_FILE}" \
+  --hostfile "$TMP_HOSTFILE" \
   --backend mpi \
   "${MLX_PROJECT_PATH}/pipeline_generate.py" \
   --prompt "${MLX_DEFAULT_PROMPT}" \
@@ -43,3 +47,4 @@ mlx.launch \
   --model ${MLX_MODEL}
 
 echo "MLX run complete!"
+rm -f "$TMP_HOSTFILE"

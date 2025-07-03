@@ -34,9 +34,23 @@ echo "Using network interface: ${MLX_NETWORK_INTERFACE}"
 echo "Model: ${MLX_MODEL}"
 echo "Hosts file: ${MLX_HOSTS_FILE}"
 
+if [ ! -f "${MLX_HOSTS_FILE}" ]; then
+    echo "ERROR: Hosts file not found: ${MLX_HOSTS_FILE}" >&2
+    exit 1
+fi
+
 # Convert hosts.json to a temporary hostfile that OpenMPI understands
+if ! command -v jq >/dev/null; then
+    echo "ERROR: jq is required to parse ${MLX_HOSTS_FILE}" >&2
+    exit 1
+fi
 TMP_HOSTFILE=$(mktemp)
 jq -r '.[].ssh' "${MLX_HOSTS_FILE}" > "$TMP_HOSTFILE"
+if [ ! -s "$TMP_HOSTFILE" ]; then
+    echo "ERROR: Temporary hostfile is empty. Check ${MLX_HOSTS_FILE}." >&2
+    exit 1
+fi
+trap 'rm -f "$TMP_HOSTFILE"' EXIT
 
 mlx.launch \
   --hostfile "$TMP_HOSTFILE" \

@@ -1,0 +1,6 @@
+setup.py
+mlx_dist_setup.egg-info/PKG-INFO
+mlx_dist_setup.egg-info/SOURCES.txt
+mlx_dist_setup.egg-info/dependency_links.txt
+mlx_dist_setup.egg-info/requires.txt
+mlx_dist_setup.egg-info/top_level.txt

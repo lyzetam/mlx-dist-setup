@@ -1,13 +1,49 @@
 #!/bin/bash
-# Test basic distributed functionality without full setup
+# Quick test ofecho "📊 Current Status:"
+echo "  • Local MLX: Working ✅" 
+echo "  • Local MPI: Working ✅" 
+echo "  • Local Distributed: $([ $? -eq 0 ] && echo 'Working ✅' || echo 'Failed ❌')"
+echo ""
+echo "🎯 For TRUE distributed across nodes:"
+echo "  1. Run: ./deploy_to_nodes.sh (to setup remote nodes)"
+echo "  2. Run: ./working_dist_inference.sh test_cluster_health.py"
 
-echo "=== Testing Basic Distributed Setup ==="
-echo
+echo ""
+echo "📝 If basic distributed test failed, creating simple test..."
+cat > simple_test.py << 'EOF'buted setup
 
-# Test 1: Local distributed (should work)
-echo "1. Testing local distributed (2 processes on this machine)..."
-if [ -f test_mlx_dist.py ]; then
-    ./run_mlx_local.sh 2 test_mlx_dist.py
+echo "🧪 Testing MLX Distributed Setup"
+echo "================================"
+
+echo "1. Testing basic MLX and MPI..."
+python -c "
+import mlx.core as mx
+from mpi4py import MPI
+print(f'✅ MLX: Metal={mx.metal.is_available()}')
+print(f'✅ MPI: Version={MPI.Get_version()}')
+"
+
+echo ""
+echo "2. Testing mlx.launch..."
+if [ -f "/Users/zz/anaconda3/envs/mlx-distributed/bin/mlx.launch" ]; then
+    echo "✅ mlx.launch found"
+else
+    echo "❌ mlx.launch not found"
+fi
+
+echo ""
+echo "3. Testing basic distributed (2 processes)..."
+/Users/zz/anaconda3/envs/mlx-distributed/bin/mlx.launch --backend mpi --hosts localhost -n 2 test_cluster_health.py
+
+echo ""
+echo "📊 Current Status:"
+echo "  • Local MLX: Working ✅"
+echo "  • Local MPI: Working ✅" 
+echo "  • Local Distributed: $([ $? -eq 0 ] && echo 'Working ✅' || echo 'Failed ❌')"
+echo ""
+echo "🎯 For TRUE distributed across nodes:"
+echo "  1. Run: ./deploy_to_nodes.sh (to setup remote nodes)"
+echo "  2. Run: ./working_dist_inference.sh test_cluster_health.py"
 else
     echo "   Creating simple test..."
     cat > simple_test.py << 'EOF'

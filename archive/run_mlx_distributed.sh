@@ -25,13 +25,13 @@ test_connectivity() {
     fi
     
     # Test SSH
-    if ! timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes ${REMOTE_USER}@$host "echo 'OK'" >/dev/null 2>&1; then
+    if ! ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no ${REMOTE_USER}@$host "echo 'OK'" >/dev/null 2>&1; then
         echo "❌ SSH FAILED"
         return 1
     fi
     
     # Test conda environment
-    if ! timeout 10 ssh -o ConnectTimeout=3 ${REMOTE_USER}@$host "source ~/anaconda3/etc/profile.d/conda.sh && conda activate mlx-distributed && python -c 'import mlx.core as mx; print(\"MLX OK\")'" >/dev/null 2>&1; then
+    if ! ssh -o ConnectTimeout=3 ${REMOTE_USER}@$host "source ~/miniconda3/etc/profile.d/conda.sh && conda activate mlx-distributed && python -c 'import mlx.core as mx; print(\"MLX OK\")'" >/dev/null 2>&1; then
         echo "❌ MLX/CONDA FAILED"
         return 1
     fi
@@ -64,6 +64,7 @@ if [ ${#failed_hosts[@]} -eq 0 ]; then
     
     /Users/zz/anaconda3/envs/mlx-distributed/bin/mlx.launch --backend mpi \
         --hosts mbp.local,mm1.local,mm2.local \
+        --env "source ~/miniconda3/etc/profile.d/conda.sh && conda activate mlx-distributed" \
         -n "$PROCESSES_PER_HOST" \
         "$SCRIPT"
         

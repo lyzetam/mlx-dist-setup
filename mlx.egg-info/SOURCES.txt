@@ -1,0 +1,6 @@
+setup.py
+mlx.egg-info/PKG-INFO
+mlx.egg-info/SOURCES.txt
+mlx.egg-info/dependency_links.txt
+mlx.egg-info/requires.txt
+mlx.egg-info/top_level.txt

@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: mlx
+Version: 0.1.0
+Requires-Dist: mpi4py
+Dynamic: requires-dist

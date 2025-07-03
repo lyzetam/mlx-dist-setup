@@ -27,12 +27,17 @@ fi
 echo "1. Testing SSH connectivity to all hosts..."
 echo "----------------------------------------"
 if [ -f "${MLX_HOSTS_FILE}" ]; then
+    if ! command -v jq >/dev/null; then
+        echo "ERROR: jq is required to parse ${MLX_HOSTS_FILE}" >&2
+        echo "       Install jq and re-run the test" >&2
+        exit 1
+    fi
     HOSTS=$(jq -r '.[].ssh' "${MLX_HOSTS_FILE}")
     CURRENT_HOST=$(hostname)
     CURRENT_HOST_SHORT=$(hostname -s)
     
     ALL_GOOD=true
-    echo "$HOSTS" | while IFS= read -r host; do
+    while IFS= read -r host; do
         [ -z "$host" ] && continue
         
         if [ "$host" = "$CURRENT_HOST" ] || [ "$host" = "$CURRENT_HOST_SHORT" ]; then
@@ -46,13 +51,14 @@ if [ -f "${MLX_HOSTS_FILE}" ]; then
                 ALL_GOOD=false
             fi
         fi
-    done
+    done <<< "$HOSTS"
     
     if [ "$ALL_GOOD" = false ]; then
         echo
         echo "⚠ Fix SSH issues before proceeding:"
         echo "  1. Enable Remote Login on all Macs"
         echo "  2. Setup SSH keys: ssh-copy-id <hostname>"
+        exit 1
     fi
 else
     echo "ERROR: hosts.json not found"
@@ -85,7 +91,16 @@ if rank == 0:
 EOF
 
 echo "Running MPI test across all hosts..."
-mpirun --hostfile "${MLX_HOSTS_FILE}" --map-by node python test_mpi.py 2>&1
+# mpirun expects a plain text hostfile. Convert hosts.json to a temporary
+# hostfile with one hostname per line.
+TMP_HOSTFILE=$(mktemp)
+trap 'rm -f "$TMP_HOSTFILE"' EXIT
+jq -r '.[].ssh' "${MLX_HOSTS_FILE}" > "$TMP_HOSTFILE"
+if [ ! -s "$TMP_HOSTFILE" ]; then
+    echo "ERROR: Temporary hostfile is empty. Check ${MLX_HOSTS_FILE} and jq installation." >&2
+    exit 1
+fi
+mpirun --hostfile "$TMP_HOSTFILE" --map-by node python test_mpi.py 2>&1
 MPI_RESULT=$?
 
 if [ $MPI_RESULT -eq 0 ]; then
@@ -128,7 +143,8 @@ if rank == 0:
 EOF
 
 echo "Running MLX distributed test..."
-mlx.launch --hostfile "${MLX_HOSTS_FILE}" --backend mpi test_mlx_dist.py 2>&1
+# Reuse the temporary hostfile generated above for mlx.launch.
+mlx.launch --hostfile "$TMP_HOSTFILE" --backend mpi test_mlx_dist.py 2>&1
 MLX_RESULT=$?
 
 if [ $MLX_RESULT -eq 0 ]; then
@@ -138,7 +154,7 @@ else
 fi
 
 # Clean up
-rm -f test_mpi.py test_mlx_dist.py
+rm -f test_mpi.py test_mlx_dist.py "$TMP_HOSTFILE"
 
 echo
 echo "==================================================="
